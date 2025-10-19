@@ -1,5 +1,5 @@
-@props(['class' => 'table'] )
-<table class="{{ $class }}">
+@props(['class' => 'table', 'id' => ''])
+<table class="{{ $class }}" id="{{ $id }}">
     <thead>
         {{ $thead }}
     </thead>

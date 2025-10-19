@@ -13,7 +13,6 @@ class TaskPolicy
     {
         $userAuth = auth()->user();
         return $userAuth->id === $task->user_id || $userAuth->role->name === 'Admin';
-        // return true;
     }
 
     /**

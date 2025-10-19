@@ -11,30 +11,12 @@
 
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="taskLink" role="button"
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                            Task
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="taskLink">
-                            <li><a class="dropdown-item" href="{{ route('task.admin') }}">List</a></li>
-                            <li><a class="dropdown-item" href="{{ route('task.create.admin') }}">Add</a></li>
-                        </ul>
-                    </li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userLink" role="button"
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                            User
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userLink">
-                            <li><a class="dropdown-item" href="{{ route('user.admin') }}">List</a></li>
-                            <li><a class="dropdown-item" href="{{ route('user.create.admin') }}">Add</a></li>
-                        </ul>
-                    </li>
-                </ul>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('task.admin') }}">Task</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('user.admin') }}">User</a>
+                </li>
             </ul>
 
             <ul class="navbar-nav">

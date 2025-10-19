@@ -15,7 +15,9 @@ class TaskService
 
     public function getAllTasks()
     {
-        $task = Task::paginate(10);
+        $user = auth()->user();
+        $task = Task::with('user')->paginate(10);
+        if ($user->role->name !== 'Admin') return $this->getTasksByUserId($user->id);
         return $task;
     }
 
@@ -48,5 +50,6 @@ class TaskService
         }
         return false;
     }
+
 }
 ?>

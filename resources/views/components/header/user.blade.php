@@ -2,7 +2,6 @@
 
 <nav class="{{$class}}">
     <div class="container-fluid">
-        <!-- Brand -->
         <a class="navbar-brand fw-bold" href="#">Hi, {{ $user->name }}</a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"

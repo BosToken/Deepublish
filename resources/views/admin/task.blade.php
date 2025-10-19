@@ -5,8 +5,7 @@
         <button type="button" class="btn btn-primary my-2" data-bs-toggle="modal" data-bs-target="#addModal">
             Add
         </button>
-        {{-- <input type="text" id="search-input" class="form-control mb-3" placeholder="Search task..."> --}}
-
+        
         <table class="table table-striped" id="tasks-table">
             <thead>
                 <tr>

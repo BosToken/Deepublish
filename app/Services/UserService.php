@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Helpers\SanitizeInput;
 
 class UserService
 {
@@ -24,6 +25,7 @@ class UserService
 
     public function createUser($request)
     {
+        $request = SanitizeInput::filterArray($request);
         $data = is_array($request) ? $request : $request->all();
         $trashedUser = User::onlyTrashed()->where('email', $data['email'])->first();
 
@@ -40,6 +42,7 @@ class UserService
 
     public function updateUser($id, $request): ?User
     {
+        $request = SanitizeInput::filterArray($request);
         $user = User::find($id);
         if ($user && auth()->user()->can('update', $user)) {
             $user->update($request);

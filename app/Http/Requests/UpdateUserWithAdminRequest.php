@@ -24,6 +24,7 @@ class UpdateUserWithAdminRequest extends FormRequest
         return [
             'name' => 'nullable|string|max:255',
             'email' => 'nullable|string|email|max:255',
+            'password' => 'nullable|string|min:8',
             'role_id' => 'sometimes|exists:roles,id',
         ];
     }

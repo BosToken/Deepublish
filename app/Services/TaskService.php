@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Task;
+use App\Helpers\SanitizeInput;
 
 class TaskService
 {
@@ -29,11 +30,14 @@ class TaskService
 
     public function createTask($request)
     {
+        $request = SanitizeInput::filterArray($request);
         if(auth()->user()->can('create', Task::class)) return Task::create($request);
     }
 
     public function updateTask($id, $request)
     {
+
+        $request = SanitizeInput::filterArray($request);
         $Task = Task::find($id);
         if ($Task && auth()->user()->can('update', $Task)) {
             $Task->update($request);

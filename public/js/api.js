@@ -16,18 +16,8 @@ function ajaxRequest(url, type, data = {}, successCallback, errorCallback) {
     });
 }
 
-function getTask(success, error) {
-    ajaxRequest(
-        "/api/task",
-        "GET",
-        {},
-        function (res) {
-            if (typeof success === "function") success(res);
-        },
-        function (xhr, status, err) {
-            if (typeof error === "function") error(xhr, status, err);
-        }
-    );
+function getTask(success, page = 1, search = "") {
+    ajaxRequest(`/api/task?page=${page}&search=${search}`, "GET", {}, success, console.error);
 }
 
 function getIdTask(id, success, error) {

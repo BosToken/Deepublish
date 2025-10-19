@@ -113,7 +113,6 @@
                                 form[0].reset();
                                 $("#addModal").modal('hide');
                             }, 1500);
-
                             reloadUsers();
                         },
                         function(xhr) {
@@ -139,7 +138,6 @@
                                 form[0].reset();
                                 $("#editModal").modal('hide');
                             }, 1500);
-
                             reloadUsers();
                         },
                         function(xhr) {
@@ -147,7 +145,6 @@
                         }
                     );
                 });
-
             });
 
             function removeUser(id) {
@@ -189,55 +186,68 @@
                 const tbody = $("#users-table tbody");
                 tbody.html('<tr><td colspan="6" class="text-center">Loading...</td></tr>');
 
-                getUser(
-                    function(res) {
-                        const users = res.data?.data || res.data || [];
-                        renderUserTable(users);
-
-                        renderPagination(res.data || res, page);
-                    },
-                    page
-                );
+                getUser(function(res) {
+                    const users = res.data?.data || res.data || [];
+                    renderUserTable(users);
+                    renderPagination(res);
+                }, page);
             }
 
+
             function renderUserTable(users) {
-                if ($.fn.DataTable.isDataTable("#users-table")) {
-                    $("#users-table").DataTable().destroy();
+                const tbody = $("#users-table tbody");
+                tbody.empty();
+
+                if (users.length === 0) {
+                    tbody.html('<tr><td colspan="6" class="text-center">No users found</td></tr>');
+                    return;
                 }
 
-                $("#users-table").DataTable({
-                    data: users,
-                    columns: [{
-                            data: "name"
-                        },
-                        {
-                            data: "email"
-                        },
-                        {
-                            data: "role.name",
-                            defaultContent: "-"
-                        },
-                        {
-                            data: "created_at"
-                        },
-                        {
-                            data: "updated_at"
-                        },
-                        {
-                            data: null,
-                            render: function(data, type, row) {
-                                return `
-                            <button class="btn btn-sm btn-warning me-1" onclick="editUser(${JSON.stringify(row).replace(/"/g, '&quot;')})">Edit</button>
-                            <button class="btn btn-sm btn-danger" onclick="removeUser('${row.id}')">Delete</button>
-                        `;
-                            },
-                            orderable: false,
-                            searchable: false
-                        }
-                    ],
-                    pageLength: 5,
-                    responsive: true,
+                users.forEach(user => {
+                    tbody.append(`
+            <tr>
+                <td>${user.name}</td>
+                <td>${user.email}</td>
+                <td>${user.role?.name || '-'}</td>
+                <td>${user.created_at}</td>
+                <td>${user.updated_at}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning me-1" onclick="editUser(${JSON.stringify(user).replace(/"/g, '&quot;')})">Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="removeUser('${user.id}')">Delete</button>
+                </td>
+            </tr>
+        `);
                 });
+            }
+
+            function renderPagination(paginatedData) {
+                $("#pagination").remove();
+
+                const pagination = $('<div id="pagination" class="d-flex justify-content-center mt-3"></div>');
+                const ul = $('<ul class="pagination"></ul>');
+
+                paginatedData.links.forEach(link => {
+                    const active = link.active ? 'active' : '';
+                    const disabled = link.url === null ? 'disabled' : '';
+                    const label = link.label.replace('&laquo;', '«').replace('&raquo;', '»');
+
+                    const li = $(`<li class="page-item ${active} ${disabled}">
+            <button class="page-link">${label}</button>
+        </li>`);
+
+                    if (link.url) {
+                        li.on('click', function() {
+                            const url = new URL(link.url);
+                            const page = url.searchParams.get("page");
+                            reloadUsers(page);
+                        });
+                    }
+
+                    ul.append(li);
+                });
+
+                pagination.append(ul);
+                $("#users-table").after(pagination);
             }
 
             function editUser(user) {
@@ -280,13 +290,13 @@
 
             function showToast(message, type = "info") {
                 const toast = $(`
-            <div class="toast align-items-center text-bg-${type} border-0 position-fixed bottom-0 end-0 m-3" role="alert">
-                <div class="d-flex">
-                    <div class="toast-body">${message}</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>
+        <div class="toast align-items-center text-bg-${type} border-0 position-fixed bottom-0 end-0 m-3" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
             </div>
-        `);
+        </div>
+    `);
                 $("body").append(toast);
                 const bsToast = new bootstrap.Toast(toast[0]);
                 bsToast.show();
@@ -294,5 +304,6 @@
             }
         </script>
     @endsection
+
 
 </x-layout.admin>

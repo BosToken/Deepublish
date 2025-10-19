@@ -1,10 +1,11 @@
 <x-layout.admin title="Task Management">
     <div class="mt-5">
-        <h2>Task</h2>
+        <h2>Tasks</h2>
 
         <button type="button" class="btn btn-primary my-2" data-bs-toggle="modal" data-bs-target="#addModal">
             Add
         </button>
+        {{-- <input type="text" id="search-input" class="form-control mb-3" placeholder="Search task..."> --}}
 
         <table class="table table-striped" id="tasks-table">
             <thead>
@@ -44,7 +45,7 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label>Description</label>
+                                <label class="form-label">Description</label>
                                 <textarea class="form-control" rows="3" name="description"></textarea>
                             </div>
                             <div id="select-user" class="mb-3">
@@ -82,7 +83,7 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label>Description</label>
+                                <label class="form-label">Description</label>
                                 <textarea class="form-control" rows="3" name="description"></textarea>
                             </div>
                             <div id="select-user-edit" class="mb-3">
@@ -100,85 +101,144 @@
     @section('script')
         <script src="/js/api.js"></script>
         <script>
+            let globalUsers = [];
+
             $(document).ready(function() {
                 getUser(function(res) {
                     const users = res.data || [];
-                    const options = users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
-                    $("#select-user select[name='user_id']").html(options);
-                    $("#select-user-edit select[name='user_id']").html(options);
+                    globalUsers = users;
+                    populateUserSelects(users);
                 });
 
                 reloadTasks();
 
+                $("#search-input").on("keyup", function() {
+                    const keyword = $(this).val();
+                    reloadTasks(1, keyword);
+                });
+
                 $("#form-create-task").on("submit", function(e) {
                     e.preventDefault();
-                    const formData = serializeForm($(this));
-                    storeTask(formData, function() {
-                        $("#addModal").modal('hide');
-                        reloadTasks();
-                    });
+                    const form = $(this);
+                    const formData = serializeForm(form);
+                    clearFormMessages(form);
+
+                    storeTask(
+                        formData,
+                        function() {
+                            showFormMessage(form, "Task created successfully ✅", "success");
+                            setTimeout(() => {
+                                clearFormMessages(form);
+                                form[0].reset();
+                                $("#addModal").modal('hide');
+                            }, 1500);
+                            reloadTasks();
+                        },
+                        function(xhr) {
+                            handleErrorResponse(xhr, form);
+                        }
+                    );
                 });
 
                 $("#form-edit-task").on("submit", function(e) {
                     e.preventDefault();
-                    const id = $(this).find("input[name='id']").val();
-                    const formData = serializeForm($(this));
-                    updateTask(id, formData, function() {
-                        $("#editModal").modal('hide');
-                        reloadTasks();
-                    });
+                    const form = $(this);
+                    const id = form.find("input[name='id']").val();
+                    const formData = serializeForm(form);
+                    clearFormMessages(form);
+
+                    updateTask(
+                        id,
+                        formData,
+                        function() {
+                            showFormMessage(form, "Task updated successfully ✅", "success");
+                            setTimeout(() => {
+                                clearFormMessages(form);
+                                form[0].reset();
+                                $("#editModal").modal('hide');
+                            }, 1500);
+                            reloadTasks();
+                        },
+                        function(xhr) {
+                            handleErrorResponse(xhr, form);
+                        }
+                    );
                 });
             });
 
-            function serializeForm($form) {
-                const formArray = $form.serializeArray();
-                return formArray.reduce((obj, item) => {
-                    obj[item.name] = item.value;
-                    return obj;
-                }, {});
+            function populateUserSelects(users) {
+                const options = users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+                $("#select-user select[name='user_id']").html(options);
+                $("#select-user-edit select[name='user_id']").html(options);
+            }
+
+            function reloadTasks(page = 1, search = "") {
+                const tbody = $("#tasks-table tbody");
+                tbody.html('<tr><td colspan="7" class="text-center">Loading...</td></tr>');
+
+                getTask(function(res) {
+                    const tasks = res.data?.data || res.data || [];
+                    renderTaskTable(tasks);
+                    renderPagination(res, search);
+                }, page, search);
             }
 
             function renderTaskTable(tasks) {
-                if ($.fn.DataTable.isDataTable("#tasks-table")) {
-                    $("#tasks-table").DataTable().destroy();
+                const tbody = $("#tasks-table tbody");
+                tbody.empty();
+
+                if (tasks.length === 0) {
+                    tbody.html('<tr><td colspan="7" class="text-center">No tasks found</td></tr>');
+                    return;
                 }
 
-                $("#tasks-table").DataTable({
-                    data: tasks,
-                    columns: [{
-                            data: "title"
-                        },
-                        {
-                            data: "description"
-                        },
-                        {
-                            data: "status"
-                        },
-                        {
-                            data: "user.name",
-                            defaultContent: "-"
-                        },
-                        {
-                            data: "created_at"
-                        },
-                        {
-                            data: "updated_at"
-                        },
-                        {
-                            data: null,
-                            render: function(data, type, row) {
-                                return `
-                                    <button class="btn btn-sm btn-warning me-1" onclick="editTask(${JSON.stringify(row).replace(/"/g, '&quot;')})">Edit</button>
-                                    <button class="btn btn-sm btn-danger" onclick="removeTask('${row.id}')">Delete</button>
-                                `;
-                            },
-                            orderable: false,
-                            searchable: false
-                        }
-                    ],
-                    pageLength: 5,
-                    responsive: true,
+                tasks.forEach(task => {
+                    tbody.append(`
+                        <tr>
+                            <td>${task.title}</td>
+                            <td>${task.description || '-'}</td>
+                            <td>${task.status}</td>
+                            <td>${task.user?.name || '-'}</td>
+                            <td>${task.created_at}</td>
+                            <td>${task.updated_at}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning me-1" onclick="editTask(${JSON.stringify(task).replace(/"/g, '&quot;')})">Edit</button>
+                                <button class="btn btn-sm btn-danger" onclick="removeTask('${task.id}')">Delete</button>
+                            </td>
+                        </tr>
+                    `);
                 });
+            }
+
+            function renderPagination(paginatedData, search = '') {
+                $("#pagination").remove();
+                const pagination = $('<div id="pagination" class="d-flex justify-content-center mt-3"></div>');
+                const ul = $('<ul class="pagination"></ul>');
+
+                if (!paginatedData.links) return;
+
+                paginatedData.links.forEach(link => {
+                    const active = link.active ? 'active' : '';
+                    const disabled = link.url === null ? 'disabled' : '';
+                    const label = link.label.replace('&laquo;', '«').replace('&raquo;', '»');
+
+                    const li = $(`<li class="page-item ${active} ${disabled}">
+                        <button class="page-link">${label}</button>
+                    </li>`);
+
+                    if (link.url) {
+                        li.on('click', function() {
+                            const url = new URL(link.url);
+                            const page = url.searchParams.get("page");
+                            reloadTasks(page, search);
+                        });
+                    }
+
+                    ul.append(li);
+                });
+
+                pagination.append(ul);
+                $("#tasks-table").after(pagination);
             }
 
             function editTask(task) {
@@ -191,7 +251,6 @@
                 modal.modal("show");
             }
 
-
             function removeTask(id) {
                 if (confirm("Are you sure you want to delete this task?")) {
                     $.ajaxSetup({
@@ -203,21 +262,61 @@
                     deleteTask(
                         id,
                         function() {
-                            alert("Task deleted successfully");
+                            showToast("Task deleted successfully ✅", "success");
                             reloadTasks();
                         },
                         function(xhr) {
-                            alert("Failed to delete task:\n" + xhr.responseText);
+                            showToast("Failed to delete task: " + (xhr.responseJSON?.message || "Unknown error"), "danger");
                         }
                     );
                 }
             }
 
-            function reloadTasks() {
-                getTask(function(res) {
-                    const tasks = res.data?.data || res.data || res;
-                    renderTaskTable(tasks);
-                });
+            function serializeForm($form) {
+                const formArray = $form.serializeArray();
+                return formArray.reduce((obj, item) => {
+                    obj[item.name] = item.value;
+                    return obj;
+                }, {});
+            }
+
+            function showFormMessage(form, message, type) {
+                let msgBox = form.find(".form-message");
+                if (msgBox.length === 0) {
+                    msgBox = $('<div class="form-message mt-2"></div>');
+                    form.prepend(msgBox);
+                }
+                msgBox.html(`<div class="alert alert-${type}">${message}</div>`);
+            }
+
+            function clearFormMessages(form) {
+                form.find(".form-message").remove();
+            }
+
+            function handleErrorResponse(xhr, form) {
+                const res = xhr.responseJSON;
+                let message = "An error occurred.";
+                if (res && res.errors) {
+                    message = Object.values(res.errors).flat().join("<br>");
+                } else if (res && res.message) {
+                    message = res.message;
+                }
+                showFormMessage(form, message, "danger");
+            }
+
+            function showToast(message, type = "info") {
+                const toast = $(`
+                    <div class="toast align-items-center text-bg-${type} border-0 position-fixed bottom-0 end-0 m-3" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">${message}</div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                `);
+                $("body").append(toast);
+                const bsToast = new bootstrap.Toast(toast[0]);
+                bsToast.show();
+                toast.on('hidden.bs.toast', () => toast.remove());
             }
         </script>
     @endsection
